@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+public function up(): void
+{
+    Schema::create('pesanan', function (Blueprint $table) {
+        $table->id();
+        $table->string('nomor_pesanan')->unique();
+        $table->date('tanggal_pesanan');
+        $table->foreignId('pelanggan_id')->constrained('pelanggan')->cascadeOnDelete(); // tanpa s
+        $table->foreignId('kendaraan_id')->constrained('kendaraan')->cascadeOnDelete(); // tanpa s
+        $table->foreignId('sopir_id')->constrained('sopir')->cascadeOnDelete(); // tanpa s
+        $table->foreignId('rute_id')->constrained('rute')->cascadeOnDelete(); // tanpa s
+        $table->string('jenis_muatan');
+        $table->decimal('tonase', 10, 2);
+        $table->decimal('harga_per_ton', 15, 2);
+        $table->decimal('total_tagihan', 15, 2);
+        $table->decimal('uang_sangu', 15, 2)->default(0);
+        $table->decimal('sisa_tagihan', 15, 2);
+        $table->enum('status', ['draft', 'dalam_perjalanan', 'selesai', 'batal'])->default('draft');
+        $table->text('catatan')->nullable();
+        $table->timestamps();
+        $table->softDeletes();
+    });
+}
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('pesanan');
+    }
+};
