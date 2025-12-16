@@ -62,14 +62,50 @@ class TripInfolist
                             ->color('success'),
                     ]),
                     
-                Section::make('Uang Sangu')
-                    ->columns(2)
+                Section::make('Uang Sangu & Biaya')
+                    ->columns(3)
                     ->schema([
                         TextEntry::make('uang_sangu')
-                            ->label('Jumlah Uang Sangu')
+                            ->label('Uang Sangu')
                             ->money('IDR', locale: 'id')
                             ->weight('bold')
-                            ->color('success'),
+                            ->color('info'),
+                        
+                        TextEntry::make('total_biaya_operasional')
+                            ->label('Total Biaya Operasional')
+                            ->money('IDR', locale: 'id')
+                            ->weight('bold')
+                            ->color('danger'),
+                            
+                        TextEntry::make('sisa_sangu')
+                            ->label('Sisa / Kembali')
+                            ->money('IDR', locale: 'id')
+                            ->weight('bold')
+                            ->color(fn ($state) => $state >= 0 ? 'success' : 'danger'),
+                        
+                        TextEntry::make('status_sangu')
+                            ->label('Status Pengembalian')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'belum_selesai' => 'warning',
+                                'selesai' => 'success',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn (string $state): string => match ($state) {
+                                'belum_selesai' => 'Belum Dikembalikan',
+                                'selesai' => 'Sudah Dikembalikan',
+                                default => '-',
+                            }),
+                            
+                        TextEntry::make('uang_kembali')
+                            ->label('Jumlah Dikembalikan')
+                            ->money('IDR', locale: 'id')
+                            ->visible(fn ($record) => $record->status_sangu === 'selesai'),
+                            
+                        TextEntry::make('tanggal_pengembalian')
+                            ->label('Tanggal Pengembalian')
+                            ->date('d/m/Y')
+                            ->visible(fn ($record) => $record->status_sangu === 'selesai'),
                             
                         TextEntry::make('catatan_sangu')
                             ->label('Catatan Uang Sangu')

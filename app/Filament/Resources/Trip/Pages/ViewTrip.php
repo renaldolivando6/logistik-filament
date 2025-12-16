@@ -89,7 +89,51 @@ class ViewTrip extends ViewRecord
                         ->send();
                 }),
             
-            // ✅ ACTION 3: Cancel Trip
+            // ✅ ACTION 3: Konfirmasi Pengembalian Uang Sangu
+            Action::make('konfirmasi_pengembalian')
+                ->label('Konfirmasi Pengembalian Uang')
+                ->icon('heroicon-o-banknotes')
+                ->color('success')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('jumlah_kembali')
+                        ->label('Jumlah Uang Dikembalikan')
+                        ->required()
+                        ->numeric()
+                        ->prefix('Rp')
+                        ->default(fn ($record) => $record->sisa_sangu)
+                        ->helperText(fn ($record) => 'Sisa uang sangu: Rp ' . number_format($record->sisa_sangu, 0, ',', '.')),
+                    
+                    \Filament\Forms\Components\DatePicker::make('tanggal_kembali')
+                        ->label('Tanggal Pengembalian')
+                        ->required()
+                        ->default(now())
+                        ->native(false)
+                        ->displayFormat('d/m/Y'),
+                    
+                    \Filament\Forms\Components\Textarea::make('catatan_kembali')
+                        ->label('Catatan')
+                        ->rows(2)
+                        ->placeholder('Catatan tambahan (opsional)'),
+                ])
+                ->visible(fn () => $this->record->status_sangu === 'belum_selesai')
+                ->action(function (array $data) {
+                    $this->record->update([
+                        'uang_kembali' => $data['jumlah_kembali'],
+                        'tanggal_pengembalian' => $data['tanggal_kembali'],
+                        'status_sangu' => 'selesai',
+                        'catatan_sangu' => $this->record->catatan_sangu 
+                            ? $this->record->catatan_sangu . "\n\nPengembalian: " . ($data['catatan_kembali'] ?? '-')
+                            : "Pengembalian: " . ($data['catatan_kembali'] ?? '-'),
+                    ]);
+                    
+                    \Filament\Notifications\Notification::make()
+                        ->success()
+                        ->title('Pengembalian Berhasil')
+                        ->body("Uang sebesar Rp " . number_format($data['jumlah_kembali'], 0, ',', '.') . " telah dikonfirmasi dikembalikan.")
+                        ->send();
+                }),
+            
+            // ✅ ACTION 4: Cancel Trip
             Action::make('batal')
                 ->label('Batalkan Trip')
                 ->icon('heroicon-o-x-circle')

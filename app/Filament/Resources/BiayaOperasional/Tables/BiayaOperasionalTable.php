@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Filament\Resources\BiayaOperasional\Tables;
 
 use Filament\Actions\BulkActionGroup;
@@ -12,6 +13,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\Trip\TripResource;
 
 class BiayaOperasionalTable
 {
@@ -24,24 +26,50 @@ class BiayaOperasionalTable
                     ->date('d/m/Y')
                     ->sortable()
                     ->searchable(),
-                    
-                // ✅ Tampilkan ID Pesanan (pure number)
-                TextColumn::make('pesanan.id')
-                    ->label('ID Pesanan')
-                    ->sortable()
+                
+                // ✅ Show tipe
+                TextColumn::make('tipe_biaya')
+                    ->label('Tipe')
                     ->badge()
-                    ->color('info'),
+                    ->color(fn (string $state): string => match ($state) {
+                        'TRIP' => 'info',
+                        'NON-TRIP' => 'warning',
+                        default => 'gray',
+                    }),
+                
+                // ✅ Trip (if exists)
+                TextColumn::make('trip.id')
+                    ->label('Trip')
+                    ->badge()
+                    ->color('primary')
+                    ->formatStateUsing(fn ($state) => $state ? "Trip #{$state}" : '-')
+                    ->url(fn ($record) => $record->trip ? 
+                        TripResource::getUrl('view', ['record' => $record->trip]) : null
+                    )
+                    ->placeholder('-')
+                    ->sortable(),
+                
+                // ✅ Sopir (via trip or direct)
+                TextColumn::make('trip.sopir.nama')
+                    ->label('Sopir')
+                    ->searchable()
+                    ->placeholder('-'),
                     
+                // ✅ Kendaraan (via trip or direct)
                 TextColumn::make('kendaraan.nopol')
                     ->label('Kendaraan')
+                    ->getStateUsing(fn ($record) => $record->trip?->kendaraan?->nopol ?? $record->kendaraan?->nopol)
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('warning')
-                    ->description(fn ($record) => $record->kendaraan?->jenis),
+                    ->description(fn ($record) => 
+                        $record->trip?->kendaraan?->jenis ?? $record->kendaraan?->jenis
+                    )
+                    ->placeholder('-'),
                     
                 TextColumn::make('kategoriBiaya.nama')
-                    ->label('Kategori Biaya')
+                    ->label('Kategori')
                     ->searchable()
                     ->sortable()
                     ->badge()
@@ -69,7 +97,7 @@ class BiayaOperasionalTable
                     
                 TextColumn::make('keterangan')
                     ->label('Keterangan')
-                    ->limit(40)
+                    ->limit(30)
                     ->tooltip(fn ($record) => $record->keterangan)
                     ->wrap()
                     ->toggleable(),
@@ -79,24 +107,40 @@ class BiayaOperasionalTable
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
-                TextColumn::make('updated_at')
-                    ->label('Diupdate')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                // Filter by Kendaraan
+                // ✅ Filter by Tipe
+                SelectFilter::make('tipe')
+                    ->label('Tipe Biaya')
+                    ->options([
+                        'trip' => 'Biaya Trip',
+                        'non-trip' => 'Biaya Umum',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if ($data['value'] === 'trip') {
+                            return $query->whereNotNull('trip_id');
+                        } elseif ($data['value'] === 'non-trip') {
+                            return $query->whereNull('trip_id');
+                        }
+                        return $query;
+                    }),
+                
+                SelectFilter::make('trip_id')
+                    ->label('Trip')
+                    ->relationship('trip', 'id')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "Trip #{$record->id} - {$record->sopir->nama}")
+                    ->searchable()
+                    ->preload()
+                    ->multiple()
+                    ->placeholder('Semua Trip'),
+                
                 SelectFilter::make('kendaraan_id')
                     ->label('Kendaraan')
                     ->relationship('kendaraan', 'nopol')
                     ->searchable()
                     ->preload()
-                    ->multiple()
-                    ->placeholder('Semua Kendaraan'),
-                    
-                // Filter by Kategori Biaya
+                    ->multiple(),
+                
                 SelectFilter::make('kategori_biaya_id')
                     ->label('Kategori Biaya')
                     ->relationship('kategoriBiaya', 'nama')
@@ -105,23 +149,6 @@ class BiayaOperasionalTable
                     ->multiple()
                     ->placeholder('Semua Kategori'),
                     
-                // Filter by Pesanan
-                SelectFilter::make('pesanan_id')
-                    ->label('Pesanan')
-                    ->options(function () {
-                        return \App\Models\Pesanan::query()
-                            ->orderBy('id', 'desc')
-                            ->limit(50)
-                            ->get()
-                            ->mapWithKeys(fn ($pesanan) => [
-                                $pesanan->id => $pesanan->id . ' - ' . $pesanan->pelanggan->nama
-                            ]);
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->placeholder('Semua Pesanan'),
-                    
-                // Filter by Tanggal
                 Filter::make('tanggal_biaya')
                     ->form([
                         \Filament\Forms\Components\DatePicker::make('dari')
@@ -141,56 +168,6 @@ class BiayaOperasionalTable
                                 $data['sampai'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('tanggal_biaya', '<=', $date),
                             );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        
-                        if ($data['dari'] ?? null) {
-                            $indicators['dari'] = 'Dari: ' . \Carbon\Carbon::parse($data['dari'])->format('d/m/Y');
-                        }
-                        
-                        if ($data['sampai'] ?? null) {
-                            $indicators['sampai'] = 'Sampai: ' . \Carbon\Carbon::parse($data['sampai'])->format('d/m/Y');
-                        }
-                        
-                        return $indicators;
-                    }),
-                    
-                // Filter by Range Jumlah
-                Filter::make('jumlah')
-                    ->form([
-                        \Filament\Forms\Components\TextInput::make('min')
-                            ->label('Min. Jumlah')
-                            ->numeric()
-                            ->prefix('Rp'),
-                        \Filament\Forms\Components\TextInput::make('max')
-                            ->label('Max. Jumlah')
-                            ->numeric()
-                            ->prefix('Rp'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['min'],
-                                fn (Builder $query, $amount): Builder => $query->where('jumlah', '>=', $amount),
-                            )
-                            ->when(
-                                $data['max'],
-                                fn (Builder $query, $amount): Builder => $query->where('jumlah', '<=', $amount),
-                            );
-                    })
-                    ->indicateUsing(function (array $data): array {
-                        $indicators = [];
-                        
-                        if ($data['min'] ?? null) {
-                            $indicators['min'] = 'Min: Rp ' . number_format($data['min'], 0, ',', '.');
-                        }
-                        
-                        if ($data['max'] ?? null) {
-                            $indicators['max'] = 'Max: Rp ' . number_format($data['max'], 0, ',', '.');
-                        }
-                        
-                        return $indicators;
                     }),
                     
                 TrashedFilter::make(),

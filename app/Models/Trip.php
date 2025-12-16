@@ -18,6 +18,9 @@ class Trip extends Model
         'sopir_id',
         'kendaraan_id',
         'uang_sangu',
+        'uang_kembali',
+        'status_sangu',
+        'tanggal_pengembalian',
         'catatan_sangu',
         'status',
         'catatan',
@@ -25,7 +28,9 @@ class Trip extends Model
     
     protected $casts = [
         'tanggal_trip' => 'date',
+        'tanggal_pengembalian' => 'date',
         'uang_sangu' => 'decimal:2',
+        'uang_kembali' => 'decimal:2',
     ];
     
     // ========================================
@@ -47,6 +52,11 @@ class Trip extends Model
         return $this->hasMany(SuratJalan::class);
     }
     
+    public function biayaOperasional(): HasMany
+    {
+        return $this->hasMany(BiayaOperasional::class);
+    }
+    
     // ========================================
     // ACCESSORS
     // ========================================
@@ -54,6 +64,22 @@ class Trip extends Model
     public function getTotalBeratAttribute(): float
     {
         return $this->suratJalan()->sum('berat_dikirim');
+    }
+    
+    /**
+     * Get total biaya operasional for this trip
+     */
+    public function getTotalBiayaOperasionalAttribute(): float
+    {
+        return $this->biayaOperasional()->sum('jumlah');
+    }
+    
+    /**
+     * Calculate sisa uang sangu (auto)
+     */
+    public function getSisaSanguAttribute(): float
+    {
+        return $this->uang_sangu - $this->total_biaya_operasional;
     }
     
     // ========================================
