@@ -28,13 +28,16 @@ class Sopir extends Model
         return $this->hasMany(Pesanan::class);
     }
     
-    public function uangSangu()
-    {
-        return $this->hasMany(UangSangu::class);
-    }
+    // ❌ REMOVED: uangSangu()
     
     public function trip()
     {
         return $this->hasMany(Trip::class);
+    }
+    
+    // ✅ Accessor untuk total uang sangu yang diterima
+    public function getTotalUangSanguAttribute()
+    {
+        return $this->trip()->sum('uang_sangu');
     }
 }

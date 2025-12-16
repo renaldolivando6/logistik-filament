@@ -17,74 +17,39 @@ class Pesanan extends Model
         'kendaraan_id',
         'sopir_id',
         'rute_id',
-        'jenis_muatan',
-        'tonase',
-        'harga_per_ton',
+        'berat',
+        'harga_per_kg',
         'total_tagihan',
-        'uang_sangu',
-        'sisa_tagihan',
         'status',
         'catatan',
     ];
     
     protected $casts = [
         'tanggal_pesanan' => 'date',
-        'tonase' => 'decimal:2',
-        'harga_per_ton' => 'decimal:2',
+        'berat' => 'decimal:2',
+        'harga_per_kg' => 'decimal:2',
         'total_tagihan' => 'decimal:2',
-        'uang_sangu' => 'decimal:2',
-        'sisa_tagihan' => 'decimal:2',
     ];
     
-    // Auto-create Uang Sangu saat Pesanan dibuat
-    protected static function booted(): void
+    // ✅ Accessor untuk jenis_muatan via relasi
+    public function getJenisMuatanAttribute()
     {
-        static::created(function ($pesanan) {
-            if ($pesanan->uang_sangu > 0) {
-                UangSangu::create([
-                    'tanggal_sangu' => $pesanan->tanggal_pesanan,
-                    'pesanan_id' => $pesanan->id,
-                    'sopir_id' => $pesanan->sopir_id,
-                    'kendaraan_id' => $pesanan->kendaraan_id,
-                    'jumlah' => $pesanan->uang_sangu,
-                    'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->id,
-                    'status' => 'disetujui',
-                ]);
-            }
-        });
-        
-        // Update Uang Sangu kalau Pesanan di-update
-        static::updated(function ($pesanan) {
-            $uangSangu = UangSangu::where('pesanan_id', $pesanan->id)->first();
-            
-            if ($pesanan->uang_sangu > 0) {
-                if ($uangSangu) {
-                    // Update existing
-                    $uangSangu->update([
-                        'tanggal_sangu' => $pesanan->tanggal_pesanan,
-                        'sopir_id' => $pesanan->sopir_id,
-                        'kendaraan_id' => $pesanan->kendaraan_id,
-                        'jumlah' => $pesanan->uang_sangu,
-                    ]);
-                } else {
-                    // Create new
-                    UangSangu::create([
-                        'tanggal_sangu' => $pesanan->tanggal_pesanan,
-                        'pesanan_id' => $pesanan->id,
-                        'sopir_id' => $pesanan->sopir_id,
-                        'kendaraan_id' => $pesanan->kendaraan_id,
-                        'jumlah' => $pesanan->uang_sangu,
-                        'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->id,
-                        'status' => 'disetujui',
-                    ]);
-                }
-            } elseif ($uangSangu) {
-                // Hapus kalau uang_sangu jadi 0
-                $uangSangu->delete();
-            }
-        });
+        return $this->rute?->item?->nama;
     }
     
+    // ✅ Accessor untuk total berat yang sudah dikirim via surat jalan
+    public function getTotalBeratDikirimAttribute()
+    {
+        return $this->suratJalan()->sum('berat_dikirim');
+    }
+    
+    // ✅ Accessor untuk sisa berat yang belum dikirim
+    public function getSisaBeratAttribute()
+    {
+        return $this->berat - $this->total_berat_dikirim;
+    }
+    
+    // Relationships
     public function pelanggan()
     {
         return $this->belongsTo(Pelanggan::class);
@@ -105,17 +70,13 @@ class Pesanan extends Model
         return $this->belongsTo(Rute::class);
     }
     
-    public function uangSangu()
-    {
-        return $this->hasMany(UangSangu::class);
-    }
+    // ❌ REMOVED: uangSangu() - tidak ada lagi
     
     public function biayaOperasional()
     {
         return $this->hasMany(BiayaOperasional::class);
     }
     
-    // ✅ NEW: Relation to Surat Jalan
     public function suratJalan()
     {
         return $this->hasMany(SuratJalan::class);

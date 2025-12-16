@@ -15,12 +15,12 @@ class Rute extends Model
         'asal',
         'tujuan',
         'item_id',
-        'harga_per_ton',
+        'harga_per_kg',
         'aktif',
     ];
     
     protected $casts = [
-        'harga_per_ton' => 'decimal:2',
+        'harga_per_kg' => 'decimal:2',
         'aktif' => 'boolean',
     ];
     

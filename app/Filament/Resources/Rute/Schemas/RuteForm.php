@@ -46,8 +46,8 @@ class RuteForm
                             ->required(),
                     ]),
                     
-                TextInput::make('harga_per_ton')
-                    ->label('Harga Per Ton')
+                TextInput::make('harga_per_kg')
+                    ->label('Harga Per Kg')
                     ->required()
                     ->numeric()
                     ->prefix('Rp')

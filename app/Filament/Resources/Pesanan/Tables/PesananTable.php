@@ -18,13 +18,10 @@ class PesananTable
     {
         return $table
             ->columns([
-                // ✅ Tampilkan ID saja, bukan nomor_pesanan
-                TextColumn::make('id')
-                    ->label('No. Pesanan')
-                    ->sortable()
-                    ->searchable()
-                    ->weight('bold')
-                    ->color('primary'),
+                TextColumn::make('index')
+                    ->label('No')
+                    ->rowIndex()
+                    ->weight('bold'),
                     
                 TextColumn::make('tanggal_pesanan')
                     ->label('Tanggal')
@@ -50,19 +47,38 @@ class PesananTable
                     ->sortable()
                     ->limit(25),
                     
-                TextColumn::make('jenis_muatan')
+                // ✅ Via relasi rute->item
+                TextColumn::make('rute.item.nama')
                     ->label('Muatan')
                     ->searchable()
-                    ->limit(20),
-                    
-                TextColumn::make('tonase')
-                    ->label('Tonase')
-                    ->numeric()
                     ->sortable()
-                    ->suffix(' Ton'),
+                    ->badge()
+                    ->color('info'),
                     
-                TextColumn::make('harga_per_ton')
-                    ->label('Harga/Ton')
+                TextColumn::make('berat')
+                    ->label('Berat')
+                    ->numeric(2)
+                    ->sortable()
+                    ->suffix(' Kg'),
+                    
+                // ✅ NEW: Total berat dikirim via accessor
+                TextColumn::make('total_berat_dikirim')
+                    ->label('Terkirim')
+                    ->numeric(2)
+                    ->suffix(' Kg')
+                    ->color('success')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                // ✅ NEW: Sisa berat via accessor
+                TextColumn::make('sisa_berat')
+                    ->label('Sisa')
+                    ->numeric(2)
+                    ->suffix(' Kg')
+                    ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                TextColumn::make('harga_per_kg')
+                    ->label('Harga/Kg')
                     ->money('IDR', locale: 'id')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -73,18 +89,6 @@ class PesananTable
                     ->sortable()
                     ->weight('bold')
                     ->color('success'),
-                    
-                TextColumn::make('uang_sangu')
-                    ->label('Uang Sangu')
-                    ->money('IDR', locale: 'id')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                    
-                TextColumn::make('sisa_tagihan')
-                    ->label('Sisa')
-                    ->money('IDR', locale: 'id')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                     
                 TextColumn::make('status')
                     ->label('Status')

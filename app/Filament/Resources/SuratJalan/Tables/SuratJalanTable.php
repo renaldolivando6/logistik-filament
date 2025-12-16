@@ -12,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use App\Filament\Resources\Trip\TripResource;
 
 class SuratJalanTable
 {
@@ -19,65 +20,78 @@ class SuratJalanTable
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label('ID SJ')
-                    ->sortable()
-                    ->weight('bold')
-                    ->color('primary'),
+                TextColumn::make('index')
+                    ->label('No')
+                    ->rowIndex()
+                    ->weight('bold'),
                     
-                TextColumn::make('trip.id')
-                    ->label('ID Trip')
-                    ->sortable()
+                // ✅ FIXED: Remove route, use resource URL
+                TextColumn::make('trip_status')
+                    ->label('Trip')
                     ->badge()
-                    ->color('info')
+                    ->getStateUsing(fn ($record) => $record->trip_id ? "Trip #{$record->trip_id}" : 'Belum jalan')
+                    ->color(fn ($state) => str_contains($state, 'Trip') ? 'info' : 'gray')
                     ->url(fn ($record) => $record->trip ? 
-                        route('filament.admin.resources.trip.view', ['record' => $record->trip]) : null
+                        TripResource::getUrl('view', ['record' => $record->trip]) : null
                     ),
                     
                 TextColumn::make('pesanan.id')
-                    ->label('ID Pesanan')
+                    ->label('Pesanan')
                     ->sortable()
+                    ->formatStateUsing(fn ($state) => "Pesanan #{$state}")
                     ->badge()
-                    ->color('warning')
-                    ->description(fn ($record) => $record->pesanan?->pelanggan?->nama),
+                    ->color('warning'),
                     
-                TextColumn::make('trip.sopir.nama')
-                    ->label('Sopir')
-                    ->searchable()
-                    ->sortable(),
-                    
-                TextColumn::make('trip.kendaraan.nopol')
-                    ->label('Kendaraan')
+                TextColumn::make('pesanan.pelanggan.nama')
+                    ->label('Pelanggan')
                     ->searchable()
                     ->sortable()
+                    ->limit(25),
+                    
+                // ✅ NEW: Alamat tujuan
+                TextColumn::make('alamatPelanggan.alamat_lengkap')
+                    ->label('Alamat Tujuan')
+                    ->limit(30)
+                    ->tooltip(fn ($record) => $record->alamatPelanggan?->alamat_lengkap_format)
+                    ->placeholder('-')
+                    ->toggleable(),
+                    
+                TextColumn::make('jenis_muatan')
+                    ->label('Muatan')
                     ->badge()
-                    ->color('gray'),
+                    ->color('success'),
                     
-                TextColumn::make('pesanan.rute.asal')
-                    ->label('Rute')
-                    ->formatStateUsing(fn ($record) => 
-                        ($record->pesanan?->rute?->asal ?? '-') . ' → ' . 
-                        ($record->pesanan?->rute?->tujuan ?? '-')
-                    )
-                    ->wrap(),
+                TextColumn::make('rute.asal')
+                    ->label('Asal')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(20),
                     
-                TextColumn::make('tonase_dikirim')
-                    ->label('Tonase')
+                TextColumn::make('rute.tujuan')
+                    ->label('Tujuan')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(20),
+                    
+                TextColumn::make('berat_dikirim')
+                    ->label('Berat')
                     ->numeric(2)
-                    ->suffix(' Ton')
+                    ->suffix(' Kg')
                     ->sortable(),
                     
                 TextColumn::make('tanggal_kirim')
                     ->label('Tgl Kirim')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->toggleable(),
                     
                 TextColumn::make('tanggal_terima')
                     ->label('Tgl Terima')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->toggleable(),
                     
                 TextColumn::make('status')
                     ->label('Status')
@@ -99,6 +113,7 @@ class SuratJalanTable
                 SelectFilter::make('trip_id')
                     ->label('Trip')
                     ->relationship('trip', 'id')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "Trip #{$record->id}")
                     ->searchable()
                     ->preload()
                     ->multiple(),
@@ -106,6 +121,7 @@ class SuratJalanTable
                 SelectFilter::make('pesanan_id')
                     ->label('Pesanan')
                     ->relationship('pesanan', 'id')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "Pesanan #{$record->id} - {$record->pelanggan->nama}")
                     ->searchable()
                     ->preload()
                     ->multiple(),

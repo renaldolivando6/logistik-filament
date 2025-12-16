@@ -27,7 +27,7 @@ class BiayaOperasionalResource extends Resource
         return 'Transaksi';
     }
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationLabel(): string
     {

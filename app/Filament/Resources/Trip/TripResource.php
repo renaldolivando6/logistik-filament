@@ -7,6 +7,7 @@ use App\Filament\Resources\Trip\Pages\EditTrip;
 use App\Filament\Resources\Trip\Pages\ListTrip;
 use App\Filament\Resources\Trip\Pages\ViewTrip;
 use App\Filament\Resources\Trip\Schemas\TripForm;
+use App\Filament\Resources\Trip\Schemas\TripInfolist;
 use App\Filament\Resources\Trip\Tables\TripTable;
 use App\Models\Trip;
 use BackedEnum;
@@ -28,11 +29,11 @@ class TripResource extends Resource
         return 'Transaksi';
     }
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationLabel(): string
     {
-        return 'Trip';
+        return 'Trip & Uang Sangu';
     }
 
     public static function getModelLabel(): string
@@ -48,6 +49,12 @@ class TripResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return TripForm::configure($schema);
+    }
+
+    // ✅ ADD THIS
+    public static function infolist(Schema $schema): Schema
+    {
+        return TripInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table

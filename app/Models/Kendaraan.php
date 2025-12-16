@@ -21,8 +21,6 @@ class Kendaraan extends Model
     ];
     
     protected $casts = [
-        'kapasitas' => 'integer',
-        'tahun' => 'integer',
         'aktif' => 'boolean',
     ];
     
@@ -31,13 +29,10 @@ class Kendaraan extends Model
         return $this->hasMany(Pesanan::class);
     }
     
-    public function uangSangu()
-    {
-        return $this->hasMany(UangSangu::class);
-    }
+    // ❌ REMOVED: uangSangu()
     
-    public function biayaOperasional()
+    public function trip()
     {
-        return $this->hasMany(BiayaOperasional::class);
+        return $this->hasMany(Trip::class);
     }
 }

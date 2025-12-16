@@ -36,8 +36,8 @@ class RuteTable
                     ->badge()
                     ->color('info'),
                     
-                TextColumn::make('harga_per_ton')
-                    ->label('Harga/Ton')
+                TextColumn::make('harga_per_kg')
+                    ->label('Harga/Kg')
                     ->money('IDR', locale: 'id')
                     ->sortable(),
                     

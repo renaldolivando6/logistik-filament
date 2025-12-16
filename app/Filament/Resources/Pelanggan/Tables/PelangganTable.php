@@ -19,23 +19,46 @@ class PelangganTable
         return $table
             ->columns([
                 TextColumn::make('kode')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                    
                 TextColumn::make('nama')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                    
                 TextColumn::make('telepon')
                     ->searchable(),
+                    
                 TextColumn::make('kontak_person')
                     ->searchable(),
+                    
+                // ✅ Show jumlah alamat
+                TextColumn::make('alamat_count')
+                    ->label('Jumlah Alamat')
+                    ->counts('alamat')
+                    ->badge()
+                    ->color('info'),
+                    
+                // ✅ Show alamat default
+                TextColumn::make('alamatDefault.alamat_lengkap')
+                    ->label('Alamat Utama')
+                    ->limit(50)
+                    ->placeholder('-')
+                    ->toggleable(),
+                    
                 IconColumn::make('aktif')
                     ->boolean(),
+                    
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()

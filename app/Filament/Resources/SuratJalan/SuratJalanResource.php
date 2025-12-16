@@ -7,6 +7,7 @@ use App\Filament\Resources\SuratJalan\Pages\EditSuratJalan;
 use App\Filament\Resources\SuratJalan\Pages\ListSuratJalan;
 use App\Filament\Resources\SuratJalan\Pages\ViewSuratJalan;
 use App\Filament\Resources\SuratJalan\Schemas\SuratJalanForm;
+use App\Filament\Resources\SuratJalan\Schemas\SuratJalanInfolist;
 use App\Filament\Resources\SuratJalan\Tables\SuratJalanTable;
 use App\Models\SuratJalan;
 use BackedEnum;
@@ -28,7 +29,7 @@ class SuratJalanResource extends Resource
         return 'Transaksi';
     }
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationLabel(): string
     {
@@ -48,6 +49,11 @@ class SuratJalanResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return SuratJalanForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return SuratJalanInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
