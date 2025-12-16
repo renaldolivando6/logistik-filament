@@ -23,16 +23,6 @@ class Sopir extends Model
         'aktif' => 'boolean',
     ];
     
-    // ✅ Auto-generate kode saat create (untuk backward compatibility)
-    protected static function booted(): void
-    {
-        static::creating(function ($sopir) {
-            if (empty($sopir->kode)) {
-                $sopir->kode = 'DRV' . str_pad(self::count() + 1, 3, '0', STR_PAD_LEFT);
-            }
-        });
-    }
-    
     public function pesanan()
     {
         return $this->hasMany(Pesanan::class);
@@ -41,5 +31,10 @@ class Sopir extends Model
     public function uangSangu()
     {
         return $this->hasMany(UangSangu::class);
+    }
+    
+    public function trip()
+    {
+        return $this->hasMany(Trip::class);
     }
 }
