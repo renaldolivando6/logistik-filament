@@ -14,7 +14,7 @@ class Rute extends Model
     protected $fillable = [
         'asal',
         'tujuan',
-        'jenis_muatan',
+        'item_id',
         'harga_per_ton',
         'aktif',
     ];
@@ -27,5 +27,10 @@ class Rute extends Model
     public function pesanan()
     {
         return $this->hasMany(Pesanan::class);
+    }
+    
+    public function item()
+    {
+        return $this->belongsTo(Item::class, 'item_id');
     }
 }

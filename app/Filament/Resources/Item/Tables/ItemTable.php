@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Rute\Tables;
+namespace App\Filament\Resources\Item\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -10,40 +10,41 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
-class RuteTable
+class ItemTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('asal')
-                    ->label('Asal')
-                    ->searchable()
-                    ->sortable(),
-                    
-                TextColumn::make('tujuan')
-                    ->label('Tujuan')
-                    ->searchable()
-                    ->sortable(),
-                    
-                TextColumn::make('item.nama')
-                    ->label('Item')
+                TextColumn::make('nama')
+                    ->label('Nama Item')
                     ->searchable()
                     ->sortable()
+                    ->weight('bold'),
+                    
+                TextColumn::make('satuan')
+                    ->label('Satuan')
                     ->badge()
                     ->color('info'),
                     
-                TextColumn::make('harga_per_ton')
-                    ->label('Harga/Ton')
-                    ->money('IDR', locale: 'id')
-                    ->sortable(),
+                TextColumn::make('rute')
+                    ->label('Jumlah Rute')
+                    ->counts('rute')
+                    ->badge()
+                    ->color('warning')
+                    ->suffix(' rute'),
                     
                 IconColumn::make('aktif')
                     ->label('Status')
                     ->boolean(),
+                    
+                TextColumn::make('keterangan')
+                    ->label('Keterangan')
+                    ->limit(40)
+                    ->tooltip(fn ($record) => $record->keterangan)
+                    ->toggleable(),
                     
                 TextColumn::make('created_at')
                     ->label('Dibuat')
@@ -58,13 +59,6 @@ class RuteTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('item_id')
-                    ->label('Item')
-                    ->relationship('item', 'nama')
-                    ->searchable()
-                    ->preload()
-                    ->multiple(),
-                    
                 TrashedFilter::make(),
             ])
             ->recordActions([
@@ -77,6 +71,6 @@ class RuteTable
                     RestoreBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('asal', 'asc');
+            ->defaultSort('nama', 'asc');
     }
 }
