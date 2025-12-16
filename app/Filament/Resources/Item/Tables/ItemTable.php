@@ -29,13 +29,6 @@ class ItemTable
                     ->badge()
                     ->color('info'),
                     
-                TextColumn::make('rute')
-                    ->label('Jumlah Rute')
-                    ->counts('rute')
-                    ->badge()
-                    ->color('warning')
-                    ->suffix(' rute'),
-                    
                 IconColumn::make('aktif')
                     ->label('Status')
                     ->boolean(),
