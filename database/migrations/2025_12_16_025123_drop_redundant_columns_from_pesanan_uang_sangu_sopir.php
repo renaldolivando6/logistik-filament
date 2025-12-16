@@ -10,24 +10,42 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ✅ Raw SQL - Skip if not exists
+        // ✅ Safe drop with try-catch
         
         // PESANAN
         if (Schema::hasColumn('pesanan', 'nomor_pesanan')) {
-            DB::statement('ALTER TABLE pesanan DROP INDEX IF EXISTS pesanan_nomor_pesanan_unique');
-            DB::statement('ALTER TABLE pesanan DROP COLUMN nomor_pesanan');
+            try {
+                DB::statement('ALTER TABLE pesanan DROP INDEX pesanan_nomor_pesanan_unique');
+            } catch (\Exception $e) {
+                // Index doesn't exist, skip
+            }
+            Schema::table('pesanan', function (Blueprint $table) {
+                $table->dropColumn('nomor_pesanan');
+            });
         }
         
         // UANG_SANGU
         if (Schema::hasColumn('uang_sangu', 'nomor_sangu')) {
-            DB::statement('ALTER TABLE uang_sangu DROP INDEX IF EXISTS uang_sangu_nomor_sangu_unique');
-            DB::statement('ALTER TABLE uang_sangu DROP COLUMN nomor_sangu');
+            try {
+                DB::statement('ALTER TABLE uang_sangu DROP INDEX uang_sangu_nomor_sangu_unique');
+            } catch (\Exception $e) {
+                // Index doesn't exist, skip
+            }
+            Schema::table('uang_sangu', function (Blueprint $table) {
+                $table->dropColumn('nomor_sangu');
+            });
         }
         
         // SOPIR
         if (Schema::hasColumn('sopir', 'kode')) {
-            DB::statement('ALTER TABLE sopir DROP INDEX IF EXISTS sopir_kode_unique');
-            DB::statement('ALTER TABLE sopir DROP COLUMN kode');
+            try {
+                DB::statement('ALTER TABLE sopir DROP INDEX sopir_kode_unique');
+            } catch (\Exception $e) {
+                // Index doesn't exist, skip
+            }
+            Schema::table('sopir', function (Blueprint $table) {
+                $table->dropColumn('kode');
+            });
         }
     }
 
