@@ -1,74 +1,70 @@
 <?php
 
-namespace App\Filament\Resources\UangSangu\Tables;
+namespace App\Filament\Resources\Trip\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
-class UangSanguTable
+class TripTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
-                // ✅ Tampilkan ID (pure number)
                 TextColumn::make('id')
-                    ->label('ID Sangu')
+                    ->label('ID Trip')
                     ->sortable()
                     ->weight('bold')
                     ->color('primary'),
                     
-                TextColumn::make('tanggal_sangu')
+                TextColumn::make('tanggal_trip')
                     ->label('Tanggal')
                     ->date('d/m/Y')
-                    ->sortable(),
-                    
-                // ✅ Tampilkan ID Pesanan (pure number)
-                TextColumn::make('pesanan.id')
-                    ->label('ID Pesanan')
                     ->sortable()
-                    ->badge()
-                    ->color('info'),
+                    ->searchable(),
                     
                 TextColumn::make('sopir.nama')
                     ->label('Sopir')
                     ->searchable()
                     ->sortable(),
                     
-                // ✅ Ganti kendaraan_id → tampilkan nopol langsung
                 TextColumn::make('kendaraan.nopol')
-                    ->label('Nopol')
+                    ->label('Kendaraan')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('warning')
                     ->description(fn ($record) => $record->kendaraan?->jenis),
                     
-                TextColumn::make('jumlah')
-                    ->label('Jumlah')
+                TextColumn::make('suratJalan')
+                    ->label('Jumlah SJ')
+                    ->counts('suratJalan')
+                    ->badge()
+                    ->color('info')
+                    ->suffix(' SJ'),
+                    
+                TextColumn::make('uangSangu.jumlah')
+                    ->label('Uang Sangu')
                     ->money('IDR', locale: 'id')
-                    ->sortable()
-                    ->weight('bold')
-                    ->color('success')
-                    ->summarize([
-                        \Filament\Tables\Columns\Summarizers\Sum::make()
-                            ->money('IDR', locale: 'id')
-                            ->label('Total'),
-                    ]),
+                    ->placeholder('-')
+                    ->color('success'),
                     
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'menunggu' => 'warning',
-                        'disetujui' => 'success',
-                        'selesai' => 'primary',
+                        'draft' => 'gray',
+                        'berangkat' => 'warning',
+                        'selesai' => 'success',
+                        'batal' => 'danger',
                         default => 'gray',
                     }),
                     
@@ -83,18 +79,37 @@ class UangSanguTable
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
-                TextColumn::make('updated_at')
-                    ->label('Diupdate')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('sopir_id')
+                    ->label('Sopir')
+                    ->relationship('sopir', 'nama')
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
+                    
+                SelectFilter::make('kendaraan_id')
+                    ->label('Kendaraan')
+                    ->relationship('kendaraan', 'nopol')
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
+                    
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'berangkat' => 'Berangkat',
+                        'selesai' => 'Selesai',
+                        'batal' => 'Batal',
+                    ])
+                    ->multiple(),
+                    
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                // Read-only, no edit
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

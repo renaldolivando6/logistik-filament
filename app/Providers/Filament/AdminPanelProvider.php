@@ -27,10 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             
-            // ✅ Tambahkan ini
-            ->brandName('Logistik Silvi')
-            // atau
-            // ->brandName('Sistem Logistik')
+            ->brandName('PT. Trans Anugerah Nusa')
             
             ->colors([
                 'primary' => Color::Amber,

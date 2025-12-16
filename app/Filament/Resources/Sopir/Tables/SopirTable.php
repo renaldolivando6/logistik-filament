@@ -17,15 +17,13 @@ class SopirTable
     {
         return $table
             ->columns([
-                TextColumn::make('kode')
-                    ->label('Kode')
-                    ->searchable()
-                    ->sortable(),
-                    
+                // ✅ HAPUS kolom "kode"
+                
                 TextColumn::make('nama')
                     ->label('Nama')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
                     
                 TextColumn::make('telepon')
                     ->label('Telepon')
@@ -34,6 +32,12 @@ class SopirTable
                 TextColumn::make('no_sim')
                     ->label('No. SIM')
                     ->searchable(),
+                    
+                TextColumn::make('alamat')
+                    ->label('Alamat')
+                    ->limit(30)
+                    ->tooltip(fn ($record) => $record->alamat)
+                    ->toggleable(),
                     
                 IconColumn::make('aktif')
                     ->label('Status')
@@ -51,10 +55,11 @@ class SopirTable
             ->recordActions([
                 EditAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('nama', 'asc');
     }
 }

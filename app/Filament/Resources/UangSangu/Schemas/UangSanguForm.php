@@ -15,14 +15,6 @@ class UangSanguForm
     {
         return $schema
             ->components([
-                TextInput::make('nomor_sangu')
-                    ->label('Nomor Sangu')
-                    ->default(fn () => 'SNG-' . date('Ymd') . '-' . str_pad(UangSangu::count() + 1, 4, '0', STR_PAD_LEFT))
-                    ->disabled()
-                    ->dehydrated()
-                    ->required()
-                    ->unique(ignoreRecord: true),
-                    
                 DatePicker::make('tanggal_sangu')
                     ->label('Tanggal Sangu')
                     ->required()

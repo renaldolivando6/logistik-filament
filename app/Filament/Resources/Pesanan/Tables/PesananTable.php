@@ -18,52 +18,94 @@ class PesananTable
     {
         return $table
             ->columns([
-                TextColumn::make('nomor_pesanan')
-                    ->searchable(),
+                // ✅ Tampilkan ID saja, bukan nomor_pesanan
+                TextColumn::make('id')
+                    ->label('No. Pesanan')
+                    ->sortable()
+                    ->searchable()
+                    ->weight('bold')
+                    ->color('primary'),
+                    
                 TextColumn::make('tanggal_pesanan')
-                    ->date()
+                    ->label('Tanggal')
+                    ->date('d/m/Y')
                     ->sortable(),
-                TextColumn::make('pelanggan_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('kendaraan_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('sopir_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('rute_id')
-                    ->numeric()
-                    ->sortable(),
+                    
+                TextColumn::make('pelanggan.nama')
+                    ->label('Pelanggan')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(30),
+                    
+                TextColumn::make('kendaraan.nopol')
+                    ->label('Kendaraan')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('warning'),
+                    
+                TextColumn::make('sopir.nama')
+                    ->label('Sopir')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(25),
+                    
                 TextColumn::make('jenis_muatan')
-                    ->searchable(),
+                    ->label('Muatan')
+                    ->searchable()
+                    ->limit(20),
+                    
                 TextColumn::make('tonase')
+                    ->label('Tonase')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->suffix(' Ton'),
+                    
                 TextColumn::make('harga_per_ton')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Harga/Ton')
+                    ->money('IDR', locale: 'id')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('total_tagihan')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Total')
+                    ->money('IDR', locale: 'id')
+                    ->sortable()
+                    ->weight('bold')
+                    ->color('success'),
+                    
                 TextColumn::make('uang_sangu')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Uang Sangu')
+                    ->money('IDR', locale: 'id')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('sisa_tagihan')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Sisa')
+                    ->money('IDR', locale: 'id')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('status')
-                    ->badge(),
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'draft' => 'gray',
+                        'dalam_perjalanan' => 'warning',
+                        'selesai' => 'success',
+                        'batal' => 'danger',
+                        default => 'gray',
+                    }),
+                    
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Dibuat')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    
                 TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
-                    ->dateTime()
+                    ->label('Diupdate')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -74,12 +116,13 @@ class PesananTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('id', 'desc');
     }
 }

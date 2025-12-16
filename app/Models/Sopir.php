@@ -12,7 +12,6 @@ class Sopir extends Model
     protected $table = 'sopir';
     
     protected $fillable = [
-        'kode',
         'nama',
         'telepon',
         'no_sim',
@@ -23,6 +22,16 @@ class Sopir extends Model
     protected $casts = [
         'aktif' => 'boolean',
     ];
+    
+    // ✅ Auto-generate kode saat create (untuk backward compatibility)
+    protected static function booted(): void
+    {
+        static::creating(function ($sopir) {
+            if (empty($sopir->kode)) {
+                $sopir->kode = 'DRV' . str_pad(self::count() + 1, 3, '0', STR_PAD_LEFT);
+            }
+        });
+    }
     
     public function pesanan()
     {

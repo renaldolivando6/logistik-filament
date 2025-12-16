@@ -12,9 +12,9 @@ class UangSangu extends Model
     protected $table = 'uang_sangu';
     
     protected $fillable = [
-        'nomor_sangu',
         'tanggal_sangu',
         'pesanan_id',
+        'trip_id', // ✅ NEW
         'sopir_id',
         'kendaraan_id',
         'jumlah',
@@ -30,6 +30,12 @@ class UangSangu extends Model
     public function pesanan()
     {
         return $this->belongsTo(Pesanan::class);
+    }
+    
+    // ✅ NEW: Relation to Trip
+    public function trip()
+    {
+        return $this->belongsTo(Trip::class);
     }
     
     public function sopir()

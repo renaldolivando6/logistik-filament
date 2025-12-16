@@ -12,7 +12,6 @@ class Pesanan extends Model
     protected $table = 'pesanan';
     
     protected $fillable = [
-        'nomor_pesanan',
         'tanggal_pesanan',
         'pelanggan_id',
         'kendaraan_id',
@@ -43,13 +42,12 @@ class Pesanan extends Model
         static::created(function ($pesanan) {
             if ($pesanan->uang_sangu > 0) {
                 UangSangu::create([
-                    'nomor_sangu' => 'SNG-' . date('Ymd') . '-' . str_pad(UangSangu::count() + 1, 4, '0', STR_PAD_LEFT),
                     'tanggal_sangu' => $pesanan->tanggal_pesanan,
                     'pesanan_id' => $pesanan->id,
                     'sopir_id' => $pesanan->sopir_id,
                     'kendaraan_id' => $pesanan->kendaraan_id,
                     'jumlah' => $pesanan->uang_sangu,
-                    'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->nomor_pesanan,
+                    'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->id,
                     'status' => 'disetujui',
                 ]);
             }
@@ -71,13 +69,12 @@ class Pesanan extends Model
                 } else {
                     // Create new
                     UangSangu::create([
-                        'nomor_sangu' => 'SNG-' . date('Ymd') . '-' . str_pad(UangSangu::count() + 1, 4, '0', STR_PAD_LEFT),
                         'tanggal_sangu' => $pesanan->tanggal_pesanan,
                         'pesanan_id' => $pesanan->id,
                         'sopir_id' => $pesanan->sopir_id,
                         'kendaraan_id' => $pesanan->kendaraan_id,
                         'jumlah' => $pesanan->uang_sangu,
-                        'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->nomor_pesanan,
+                        'catatan' => 'Auto-generated dari Pesanan #' . $pesanan->id,
                         'status' => 'disetujui',
                     ]);
                 }
@@ -116,5 +113,11 @@ class Pesanan extends Model
     public function biayaOperasional()
     {
         return $this->hasMany(BiayaOperasional::class);
+    }
+    
+    // ✅ NEW: Relation to Surat Jalan
+    public function suratJalan()
+    {
+        return $this->hasMany(SuratJalan::class);
     }
 }

@@ -13,13 +13,8 @@ class SopirForm
     {
         return $schema
             ->components([
-                TextInput::make('kode')
-                    ->label('Kode Sopir')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(50)
-                    ->placeholder('DRV001'),
-                    
+                // ✅ HAPUS field "kode" sopir
+                
                 TextInput::make('nama')
                     ->label('Nama Sopir')
                     ->required()

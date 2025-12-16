@@ -17,13 +17,6 @@ class PesananForm
     {
         return $schema
             ->components([
-                TextInput::make('nomor_pesanan')
-                    ->label('Nomor Pesanan')
-                    ->default(fn () => 'ORD-' . date('Ymd') . '-' . str_pad(Pesanan::count() + 1, 4, '0', STR_PAD_LEFT))
-                    ->disabled()
-                    ->dehydrated()
-                    ->required()
-                    ->unique(ignoreRecord: true),
                     
                 DatePicker::make('tanggal_pesanan')
                     ->label('Tanggal Pesanan')

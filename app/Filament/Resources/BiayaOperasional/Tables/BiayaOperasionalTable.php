@@ -25,12 +25,12 @@ class BiayaOperasionalTable
                     ->sortable()
                     ->searchable(),
                     
-                TextColumn::make('pesanan.nomor_pesanan')
-                    ->label('No. Pesanan')
-                    ->searchable()
+                // ✅ Tampilkan ID Pesanan (pure number)
+                TextColumn::make('pesanan.id')
+                    ->label('ID Pesanan')
                     ->sortable()
-                    ->limit(20)
-                    ->tooltip(fn ($record) => $record->pesanan?->nomor_pesanan),
+                    ->badge()
+                    ->color('info'),
                     
                 TextColumn::make('kendaraan.nopol')
                     ->label('Kendaraan')
@@ -108,7 +108,15 @@ class BiayaOperasionalTable
                 // Filter by Pesanan
                 SelectFilter::make('pesanan_id')
                     ->label('Pesanan')
-                    ->relationship('pesanan', 'nomor_pesanan')
+                    ->options(function () {
+                        return \App\Models\Pesanan::query()
+                            ->orderBy('id', 'desc')
+                            ->limit(50)
+                            ->get()
+                            ->mapWithKeys(fn ($pesanan) => [
+                                $pesanan->id => $pesanan->id . ' - ' . $pesanan->pelanggan->nama
+                            ]);
+                    })
                     ->searchable()
                     ->preload()
                     ->placeholder('Semua Pesanan'),
