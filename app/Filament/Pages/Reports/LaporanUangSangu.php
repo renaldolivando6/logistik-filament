@@ -3,30 +3,22 @@
 namespace App\Filament\Pages\Reports;
 
 use Filament\Pages\Page;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Trip;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use App\ExcelReports\UangSanguExcelReport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use BackedEnum;
 
-class LaporanUangSangu extends Page implements HasForms, HasTable
+class LaporanUangSangu extends Page implements HasTable
 {
-    use InteractsWithForms, InteractsWithTable;
+    use InteractsWithTable;
     
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-currency-dollar';
-    
-    protected static ?int $navigationSort = 5;
-    
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?int $navigationSort = 3;
     protected string $view = 'filament.pages.reports.laporan-uang-sangu';
     
     public static function getNavigationGroup(): ?string
@@ -44,44 +36,158 @@ class LaporanUangSangu extends Page implements HasForms, HasTable
         return 'Laporan Uang Sangu';
     }
     
+    // Public properties untuk filter
+    public ?string $dari_tanggal = null;
+    public ?string $sampai_tanggal = null;
+    public ?int $sopir_id = null;
+    public ?int $kendaraan_id = null;
+    public ?string $status_sangu = null; // 'belum_selesai' atau 'selesai'
+    public bool $hasAppliedFilter = false;
+    
+    // Apply Filter Action
+    public function applyFilters(): void
+    {
+        $this->hasAppliedFilter = true;
+        $this->resetTable();
+        $this->dispatch('initCharts');
+    }
+    
+    // Reset Filter Action
+    public function resetFilters(): void
+    {
+        $this->dari_tanggal = null;
+        $this->sampai_tanggal = null;
+        $this->sopir_id = null;
+        $this->kendaraan_id = null;
+        $this->status_sangu = null;
+        $this->hasAppliedFilter = false;
+        $this->resetTable();
+    }
+    
+    // Get Filtered Query
+    private function getFilteredQuery(): Builder
+    {
+        $query = Trip::query()
+            ->with(['sopir', 'kendaraan'])
+            ->withSum('biayaOperasional', 'jumlah')
+            ->where('status', '!=', 'batal'); // Exclude cancelled trips
+        
+        if ($this->dari_tanggal) {
+            $query->whereDate('tanggal_trip', '>=', $this->dari_tanggal);
+        }
+        
+        if ($this->sampai_tanggal) {
+            $query->whereDate('tanggal_trip', '<=', $this->sampai_tanggal);
+        }
+        
+        if ($this->sopir_id) {
+            $query->where('sopir_id', $this->sopir_id);
+        }
+        
+        if ($this->kendaraan_id) {
+            $query->where('kendaraan_id', $this->kendaraan_id);
+        }
+        
+        if ($this->status_sangu) {
+            $query->where('status_sangu', $this->status_sangu);
+        }
+        
+        return $query;
+    }
+    
+    // Summary data
     public function getSummaryData(): array
     {
-        $trips = Trip::query()
-            ->with(['sopir', 'kendaraan'])
-            ->select([
-                'trip.*',
-                DB::raw('COALESCE((SELECT SUM(jumlah) FROM biaya_operasional WHERE trip_id = trip.id), 0) as total_expenses'),
-                DB::raw('(uang_sangu - COALESCE((SELECT SUM(jumlah) FROM biaya_operasional WHERE trip_id = trip.id), 0) - uang_kembali) as outstanding'),
-            ])
-            ->where('status', '!=', 'batal')
-            ->get();
+        if (!$this->hasAppliedFilter) {
+            return [
+                'total_sangu_diberikan' => 0,
+                'total_biaya_operasional' => 0,
+                'total_harus_kembali' => 0,
+                'total_sudah_kembali' => 0,
+            ];
+        }
+        
+        $trips = $this->getFilteredQuery()->get();
+        
+        $totalSangu = $trips->sum('uang_sangu');
+        $totalBiaya = $trips->sum('biaya_operasional_sum_jumlah');
+        $totalHarusKembali = $trips->sum(function($trip) {
+            return $trip->uang_sangu - ($trip->biaya_operasional_sum_jumlah ?? 0);
+        });
+        $totalSudahKembali = $trips->sum('uang_kembali');
         
         return [
-            'total_sangu' => $trips->sum('uang_sangu'),
-            'total_expenses' => $trips->sum('total_expenses'),
-            'total_returned' => $trips->sum('uang_kembali'),
-            'outstanding' => $trips->where('status_sangu', 'belum_selesai')->sum('outstanding'),
-            'overdue_count' => $trips->where('status_sangu', 'belum_selesai')
-                ->filter(function ($trip) {
-                    return $trip->tanggal_trip && $trip->tanggal_trip->diffInDays(now()) > 7;
-                })
-                ->count(),
+            'total_sangu_diberikan' => $totalSangu,
+            'total_biaya_operasional' => $totalBiaya,
+            'total_harus_kembali' => $totalHarusKembali,
+            'total_sudah_kembali' => $totalSudahKembali,
         ];
     }
     
+    // Get Top 10 Outstanding Sangu (Bar Chart)
+    public function getOutstandingSanguData(): array
+    {
+        if (!$this->hasAppliedFilter) {
+            return ['labels' => [], 'belum_kembali' => [], 'sudah_kembali' => []];
+        }
+        
+        $trips = $this->getFilteredQuery()
+            ->orderByDesc('uang_sangu')
+            ->limit(10)
+            ->get();
+        
+        $labels = [];
+        $belumKembali = [];
+        $sudahKembali = [];
+        
+        foreach ($trips as $trip) {
+            $sisaSangu = $trip->uang_sangu - ($trip->biaya_operasional_sum_jumlah ?? 0);
+            $labels[] = "TRIP-{$trip->id}\n{$trip->sopir->nama}";
+            
+            if ($trip->status_sangu === 'belum_selesai') {
+                $belumKembali[] = (float) $sisaSangu;
+                $sudahKembali[] = 0;
+            } else {
+                $belumKembali[] = 0;
+                $sudahKembali[] = (float) $trip->uang_kembali;
+            }
+        }
+        
+        return [
+            'labels' => $labels,
+            'belum_kembali' => $belumKembali,
+            'sudah_kembali' => $sudahKembali,
+        ];
+    }
+    
+    // Get options for selects
+    public function getSopirOptions(): array
+    {
+        return \App\Models\Sopir::pluck('nama', 'id')->toArray();
+    }
+    
+    public function getKendaraanOptions(): array
+    {
+        return \App\Models\Kendaraan::pluck('nopol', 'id')->toArray();
+    }
+    
+    public function getStatusSanguOptions(): array
+    {
+        return [
+            'belum_selesai' => 'Belum Dikembalikan',
+            'selesai' => 'Sudah Dikembalikan',
+        ];
+    }
+    
+    // Table configuration
     public function table(Table $table): Table
     {
         return $table
-            ->query($this->getBaseQuery())
+            ->query($this->getFilteredQuery())
             ->columns([
-                TextColumn::make('index')
-                    ->label('No')
-                    ->rowIndex(),
-                
                 TextColumn::make('id')
-                    ->label('ID Trip')
-                    ->formatStateUsing(fn ($state) => 'TRIP-' . str_pad($state, 5, '0', STR_PAD_LEFT))
-                    ->searchable()
+                    ->label('Trip ID')
+                    ->formatStateUsing(fn($state) => "TRIP-{$state}")
                     ->sortable(),
                 
                 TextColumn::make('tanggal_trip')
@@ -100,46 +206,47 @@ class LaporanUangSangu extends Page implements HasForms, HasTable
                     ->sortable(),
                 
                 TextColumn::make('uang_sangu')
-                    ->label('Uang Sangu')
+                    ->label('Sangu Diberikan')
                     ->money('IDR', locale: 'id')
-                    ->alignEnd()
                     ->sortable()
-                    ->summarize([
-                        \Filament\Tables\Columns\Summarizers\Sum::make()
-                            ->money('IDR', locale: 'id')
-                    ]),
+                    ->alignEnd(),
                 
-                TextColumn::make('total_expenses')
+                TextColumn::make('biaya_operasional_sum_jumlah')
                     ->label('Total Biaya')
                     ->money('IDR', locale: 'id')
-                    ->alignEnd()
                     ->sortable()
-                    ->color('danger')
-                    ->summarize([
-                        \Filament\Tables\Columns\Summarizers\Sum::make()
-                            ->money('IDR', locale: 'id')
-                    ]),
+                    ->alignEnd()
+                    ->default(0),
+                
+                TextColumn::make('sisa_sangu')
+                    ->label('Sisa (Harus Kembali)')
+                    ->getStateUsing(function($record) {
+                        return $record->uang_sangu - ($record->biaya_operasional_sum_jumlah ?? 0);
+                    })
+                    ->money('IDR', locale: 'id')
+                    ->alignEnd()
+                    ->color('warning'),
                 
                 TextColumn::make('uang_kembali')
-                    ->label('Dikembalikan')
+                    ->label('Sudah Dikembalikan')
                     ->money('IDR', locale: 'id')
-                    ->alignEnd()
                     ->sortable()
-                    ->color('success')
-                    ->summarize([
-                        \Filament\Tables\Columns\Summarizers\Sum::make()
-                            ->money('IDR', locale: 'id')
-                    ]),
-                
-                TextColumn::make('outstanding')
-                    ->label('Selisih')
-                    ->money('IDR', locale: 'id')
                     ->alignEnd()
-                    ->color(fn ($state) => $state > 0 ? 'warning' : ($state < 0 ? 'danger' : 'success'))
-                    ->summarize([
-                        \Filament\Tables\Columns\Summarizers\Sum::make()
-                            ->money('IDR', locale: 'id')
-                    ]),
+                    ->default(0),
+                
+                TextColumn::make('selisih')
+                    ->label('Selisih')
+                    ->getStateUsing(function($record) {
+                        $harusKembali = $record->uang_sangu - ($record->biaya_operasional_sum_jumlah ?? 0);
+                        return $record->uang_kembali - $harusKembali;
+                    })
+                    ->formatStateUsing(function($state) {
+                        if ($state == 0) return '-';
+                        $prefix = $state > 0 ? '+' : '';
+                        return $prefix . 'Rp ' . number_format(abs($state), 0, ',', '.');
+                    })
+                    ->color(fn($state) => $state > 0 ? 'success' : ($state < 0 ? 'danger' : 'gray'))
+                    ->alignEnd(),
                 
                 TextColumn::make('status_sangu')
                     ->label('Status')
@@ -150,107 +257,54 @@ class LaporanUangSangu extends Page implements HasForms, HasTable
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'belum_selesai' => 'Belum Selesai',
-                        'selesai' => 'Selesai',
+                        'belum_selesai' => 'Belum Dikembalikan',
+                        'selesai' => 'Sudah Dikembalikan',
                         default => $state,
                     }),
                 
-                TextColumn::make('days_outstanding')
-                    ->label('Hari')
-                    ->numeric()
-                    ->suffix(' hari')
-                    ->alignCenter()
-                    ->color(fn ($state) => $state > 7 ? 'danger' : ($state > 3 ? 'warning' : 'gray')),
-                
                 TextColumn::make('tanggal_pengembalian')
-                    ->label('Tgl Kembali')
+                    ->label('Tgl Pengembalian')
                     ->date('d/m/Y')
-                    ->sortable()
-                    ->toggleable()
-                    ->placeholder('-'),
+                    ->default('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                Filter::make('tanggal')
-                    ->form([
-                        DatePicker::make('dari')
-                            ->label('Dari Tanggal')
-                            ->native(false),
-                        DatePicker::make('sampai')
-                            ->label('Sampai Tanggal')
-                            ->native(false),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when($data['dari'], 
-                                fn (Builder $query, $date) => $query->whereDate('tanggal_trip', '>=', $date)
-                            )
-                            ->when($data['sampai'], 
-                                fn (Builder $query, $date) => $query->whereDate('tanggal_trip', '<=', $date)
-                            );
-                    }),
-                
-                \Filament\Tables\Filters\SelectFilter::make('sopir_id')
-                    ->label('Sopir')
-                    ->relationship('sopir', 'nama')
-                    ->searchable()
-                    ->preload(),
-                
-                \Filament\Tables\Filters\SelectFilter::make('kendaraan_id')
-                    ->label('Kendaraan')
-                    ->relationship('kendaraan', 'nopol')
-                    ->searchable()
-                    ->preload(),
-                
-                \Filament\Tables\Filters\SelectFilter::make('status_sangu')
-                    ->label('Status')
-                    ->options([
-                        'belum_selesai' => 'Belum Selesai',
-                        'selesai' => 'Selesai',
-                    ]),
-                
-                Filter::make('overdue')
-                    ->label('Lewat Waktu (>7 hari)')
-                    ->query(fn (Builder $query) => 
-                        $query->where('status_sangu', 'belum_selesai')
-                            ->whereRaw('DATEDIFF(COALESCE(tanggal_pengembalian, CURDATE()), tanggal_trip) > 7')
-                    )
-                    ->toggle(),
-            ])
-            ->defaultSort('tanggal_trip', 'desc');
+            ->defaultSort('id', 'desc')
+            ->paginated([10, 25, 50, 100]);
     }
     
-    protected function getHeaderActions(): array
+    // Export methods
+    public function exportToExcel()
     {
-        return [
-            Action::make('export_excel')
-                ->label('Export Excel')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('success')
-                ->action(function () {
-                    $data = $this->getBaseQuery()->get();
-                    return Excel::download(
-                        new UangSanguExcelReport($data), 
-                        'laporan-uang-sangu-' . now()->format('Y-m-d') . '.xlsx'
-                    );
-                }),
+        $data = $this->getFilteredQuery()->get();
             
-            Action::make('export_pdf')
-                ->label('Export PDF')
-                ->icon('heroicon-o-document-text')
-                ->color('danger'),
-        ];
+        return Excel::download(
+            new \App\ExcelReports\UangSanguExcelReport($data), 
+            'laporan-uang-sangu-' . now()->format('Y-m-d') . '.xlsx'
+        );
     }
     
-    private function getBaseQuery()
+    public function exportToPdf()
     {
-        return Trip::query()
-            ->with(['sopir', 'kendaraan'])
-            ->select([
-                'trip.*',
-                DB::raw('COALESCE((SELECT SUM(jumlah) FROM biaya_operasional WHERE trip_id = trip.id), 0) as total_expenses'),
-                DB::raw('(uang_sangu - COALESCE((SELECT SUM(jumlah) FROM biaya_operasional WHERE trip_id = trip.id), 0) - uang_kembali) as outstanding'),
-                DB::raw('DATEDIFF(COALESCE(tanggal_pengembalian, CURDATE()), tanggal_trip) as days_outstanding'),
-            ])
-            ->where('status', '!=', 'batal');
+        $data = $this->getFilteredQuery()->get();
+        $summary = $this->getSummaryData();
+        
+        // Prepare filter info
+        $filters = [
+            'dari_tanggal' => $this->dari_tanggal,
+            'sampai_tanggal' => $this->sampai_tanggal,
+            'sopir' => $this->sopir_id ? \App\Models\Sopir::find($this->sopir_id)?->nama : null,
+            'kendaraan' => $this->kendaraan_id ? \App\Models\Kendaraan::find($this->kendaraan_id)?->nopol : null,
+            'status_sangu' => $this->status_sangu ? $this->getStatusSanguOptions()[$this->status_sangu] : null,
+        ];
+        
+        $pdf = Pdf::loadView('reports.uang-sangu-pdf', [
+            'data' => $data,
+            'summary' => $summary,
+            'filters' => $filters,
+        ]);
+        
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'laporan-uang-sangu-' . now()->format('Y-m-d') . '.pdf');
     }
 }

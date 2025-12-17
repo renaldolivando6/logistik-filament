@@ -1,169 +1,266 @@
 <x-filament-panels::page>
-    {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-5">
-        <x-filament::card>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total Uang Sangu
-            </div>
-            <div class="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">
-                Rp {{ number_format($this->getSummaryData()['total_sangu'], 0, ',', '.') }}
-            </div>
-        </x-filament::card>
-        
-        <x-filament::card>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total Biaya
-            </div>
-            <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">
-                Rp {{ number_format($this->getSummaryData()['total_expenses'], 0, ',', '.') }}
-            </div>
-        </x-filament::card>
-        
-        <x-filament::card>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Dikembalikan
-            </div>
-            <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
-                Rp {{ number_format($this->getSummaryData()['total_returned'], 0, ',', '.') }}
-            </div>
-        </x-filament::card>
-        
-        <x-filament::card>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Outstanding
-            </div>
-            <div class="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">
-                Rp {{ number_format($this->getSummaryData()['outstanding'], 0, ',', '.') }}
-            </div>
-        </x-filament::card>
-        
-        <x-filament::card>
-            <div class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Lewat Waktu
-            </div>
-            <div class="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-                {{ number_format($this->getSummaryData()['overdue_count']) }}
-            </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                trip > 7 hari
-            </div>
-        </x-filament::card>
-    </div>
-    
-    {{-- Alert for Overdue --}}
-    @if($this->getSummaryData()['overdue_count'] > 0)
-    <x-filament::card class="mb-6 border-l-4 border-red-500">
-        <div class="flex items-center p-4">
-            <svg class="w-6 h-6 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <div>
-                <h3 class="font-semibold text-red-600 dark:text-red-400">Perhatian!</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Ada {{ $this->getSummaryData()['overdue_count'] }} trip dengan uang sangu yang belum diselesaikan lebih dari 7 hari.
-                </p>
-            </div>
-        </div>
-    </x-filament::card>
-    @endif
-    
-    {{-- Chart Section --}}
     <x-filament::card class="mb-6">
-        <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4 dark:text-white">Status Pengembalian Uang Sangu</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div style="height: 300px;">
-                    <canvas id="statusChart"></canvas>
-                </div>
-                <div style="height: 300px;">
-                    <canvas id="trendChart"></canvas>
-                </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filter Laporan</h3>
+                @if($hasAppliedFilter)
+                    <x-filament::badge color="success" icon="heroicon-o-funnel">Filter Aktif</x-filament::badge>
+                @endif
             </div>
+            
+            <form wire:submit="applyFilters">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dari Tanggal</label>
+                        <input type="date" wire:model="dari_tanggal" class="fi-input block w-full border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm transition duration-75">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sampai Tanggal</label>
+                        <input type="date" wire:model="sampai_tanggal" class="fi-input block w-full border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm transition duration-75">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status Pengembalian</label>
+                        <select wire:model="status_sangu" class="fi-select block w-full border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm transition duration-75">
+                            <option value="">Semua Status</option>
+                            @foreach($this->getStatusSanguOptions() as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sopir</label>
+                        <select wire:model="sopir_id" class="fi-select block w-full border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm transition duration-75">
+                            <option value="">Semua Sopir</option>
+                            @foreach($this->getSopirOptions() as $id => $nama)
+                                <option value="{{ $id }}">{{ $nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kendaraan</label>
+                        <select wire:model="kendaraan_id" class="fi-select block w-full border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm transition duration-75">
+                            <option value="">Semua Kendaraan</option>
+                            @foreach($this->getKendaraanOptions() as $id => $nopol)
+                                <option value="{{ $id }}">{{ $nopol }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex gap-3">
+                    <x-filament::button type="submit" color="primary" icon="heroicon-o-funnel" size="lg">Tampilkan Laporan</x-filament::button>
+                    @if($hasAppliedFilter)
+                        <x-filament::button type="button" color="gray" icon="heroicon-o-x-mark" wire:click="resetFilters" size="lg">Reset Filter</x-filament::button>
+                    @endif
+                </div>
+            </form>
         </div>
     </x-filament::card>
     
-    {{-- Table Section --}}
-    <x-filament::card>
-        {{ $this->table }}
-    </x-filament::card>
-    
-    @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Status Chart (Pie)
-            const statusCtx = document.getElementById('statusChart').getContext('2d');
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Selesai', 'Belum Selesai', 'Lewat Waktu'],
-                    datasets: [{
-                        data: [65, 25, 10],
-                        backgroundColor: [
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(251, 146, 60, 0.8)',
-                            'rgba(239, 68, 68, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgb(34, 197, 94)',
-                            'rgb(251, 146, 60)',
-                            'rgb(239, 68, 68)'
-                        ],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+    @if($hasAppliedFilter)
+        <x-filament::card class="mb-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-medium text-green-900 dark:text-green-200">Filter Aktif</p>
+                        <p class="text-xs text-green-700 dark:text-green-300 mt-1">
+                            @if($dari_tanggal && $sampai_tanggal)
+                                Periode: {{ \Carbon\Carbon::parse($dari_tanggal)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($sampai_tanggal)->format('d/m/Y') }}
+                            @elseif($dari_tanggal)
+                                Dari: {{ \Carbon\Carbon::parse($dari_tanggal)->format('d/m/Y') }}
+                            @elseif($sampai_tanggal)
+                                Sampai: {{ \Carbon\Carbon::parse($sampai_tanggal)->format('d/m/Y') }}
+                            @else
+                                Semua Periode
+                            @endif
+                            @if($status_sangu) • Status: {{ $this->getStatusSanguOptions()[$status_sangu] }} @endif
+                            @if($sopir_id) • Sopir: {{ \App\Models\Sopir::find($sopir_id)?->nama }} @endif
+                            @if($kendaraan_id) • Kendaraan: {{ \App\Models\Kendaraan::find($kendaraan_id)?->nopol }} @endif
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <x-filament::button color="success" icon="heroicon-o-arrow-down-tray" wire:click="exportToExcel" size="sm">
+                        <span class="hidden sm:inline">Export Excel</span>
+                        <span class="sm:hidden">Excel</span>
+                    </x-filament::button>
+                    <x-filament::button color="danger" icon="heroicon-o-document-text" wire:click="exportToPdf" size="sm">
+                        <span class="hidden sm:inline">Export PDF</span>
+                        <span class="sm:hidden">PDF</span>
+                    </x-filament::button>
+                </div>
+            </div>
+        </x-filament::card>
+        
+        <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
+            <x-filament::card>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Sangu Diberikan</div>
+                        <div class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">Rp {{ number_format($this->getSummaryData()['total_sangu_diberikan'], 0, ',', '.') }}</div>
+                    </div>
+                    <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+                        <x-heroicon-o-banknotes class="w-8 h-8 text-blue-600 dark:text-blue-400"/>
+                    </div>
+                </div>
+            </x-filament::card>
             
-            // Trend Chart (Line)
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Uang Sangu',
-                        data: [8000000, 12000000, 9500000, 11000000],
-                        borderColor: 'rgb(59, 130, 246)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Dikembalikan',
-                        data: [7200000, 10800000, 8500000, 9900000],
-                        borderColor: 'rgb(34, 197, 94)',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+            <x-filament::card>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Biaya</div>
+                        <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">Rp {{ number_format($this->getSummaryData()['total_biaya_operasional'], 0, ',', '.') }}</div>
+                    </div>
+                    <div class="p-3 bg-red-100 dark:bg-red-900 rounded-full">
+                        <x-heroicon-o-receipt-percent class="w-8 h-8 text-red-600 dark:text-red-400"/>
+                    </div>
+                </div>
+            </x-filament::card>
+
+            <x-filament::card>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Harus Dikembalikan</div>
+                        <div class="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">Rp {{ number_format($this->getSummaryData()['total_harus_kembali'], 0, ',', '.') }}</div>
+                    </div>
+                    <div class="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
+                        <x-heroicon-o-arrow-uturn-left class="w-8 h-8 text-orange-600 dark:text-orange-400"/>
+                    </div>
+                </div>
+            </x-filament::card>
+
+            <x-filament::card>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Sudah Dikembalikan</div>
+                        <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">Rp {{ number_format($this->getSummaryData()['total_sudah_kembali'], 0, ',', '.') }}</div>
+                    </div>
+                    <div class="p-3 bg-green-100 dark:bg-green-900 rounded-full">
+                        <x-heroicon-o-check-circle class="w-8 h-8 text-green-600 dark:text-green-400"/>
+                    </div>
+                </div>
+            </x-filament::card>
+        </div>
+        
+        <x-filament::card class="mb-6">
+            <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top 10 Trip - Status Pengembalian</h3>
+                <div class="relative h-[400px]">
+                    <canvas id="outstandingSanguChart" data-chart-data="{{ json_encode($this->getOutstandingSanguData()) }}"></canvas>
+                </div>
+            </div>
+        </x-filament::card>
+        
+        <x-filament::card>
+            {{ $this->table }}
+        </x-filament::card>
+
+    @else
+        <x-filament::card>
+            <div class="flex flex-col items-center justify-center py-16">
+                <div class="w-24 h-24 mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <x-heroicon-o-funnel class="w-12 h-12 text-gray-400 dark:text-gray-600"/>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">Belum Ada Filter</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 text-center">Silakan pilih filter dan klik "Tampilkan Laporan".</p>
+            </div>
+        </x-filament::card>
+    @endif
+</x-filament-panels::page>
+
+@script
+<script>
+    window.initSanguCharts = () => {
+        if (typeof Chart === 'undefined') {
+            setTimeout(window.initSanguCharts, 500);
+            return;
+        }
+
+        const formatRupiah = (val) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(val);
+        };
+
+        // Outstanding Sangu Chart (Horizontal Bar)
+        const barCtx = document.getElementById('outstandingSanguChart');
+        if (barCtx) {
+            if (window.sanguChart) window.sanguChart.destroy();
+            const dataRaw = barCtx.getAttribute('data-chart-data');
+            const data = dataRaw ? JSON.parse(dataRaw) : { labels: [], belum_kembali: [], sudah_kembali: [] };
+            
+            if (data.labels && data.labels.length > 0) {
+                window.sanguChart = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Belum Dikembalikan',
+                                data: data.belum_kembali,
+                                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Sudah Dikembalikan',
+                                data: data.sudah_kembali,
+                                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                borderWidth: 1
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + (value / 1000000) + 'M';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { 
+                                position: 'top',
+                                labels: { font: { size: 12 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => ctx.dataset.label + ': ' + formatRupiah(ctx.raw)
                                 }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                stacked: false,
+                                ticks: { 
+                                    callback: (val) => 'Rp ' + (val / 1000000).toFixed(1) + 'jt' 
+                                }
+                            },
+                            y: { 
+                                stacked: false,
+                                grid: { display: false }
                             }
                         }
                     }
-                }
-            });
-        });
-    </script>
-    @endpush
-</x-filament-panels::page>
+                });
+            }
+        }
+    };
+
+    window.initSanguCharts();
+    document.addEventListener('livewire:navigated', () => setTimeout(window.initSanguCharts, 200));
+    window.addEventListener('initCharts', () => setTimeout(window.initSanguCharts, 200));
+    Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+        succeed(({ snapshot, effect }) => setTimeout(window.initSanguCharts, 300));
+    });
+</script>
+@endscript
