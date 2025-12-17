@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Providers\Filament;
 
 use Filament\Http\Middleware\Authenticate;
@@ -17,6 +18,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Illuminate\Support\Facades\Blade;
+use Filament\Navigation\NavigationGroup;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -28,7 +30,6 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->viteTheme('resources/css/filament/admin/theme.css')
-            // Ini akan menyuntikkan script app.js ke bagian bawah body setiap halaman admin
             ->renderHook(
                 'panels::body.end',
                 fn (): string => Blade::render("@vite('resources/js/app.js')")
@@ -40,6 +41,25 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            
+            ->defaultAvatarProvider(\Filament\AvatarProviders\UiAvatarsProvider::class)
+
+            ->sidebarCollapsibleOnDesktop()
+            
+            // ✅ SET NAVIGATION GROUP ORDER
+            ->navigationGroups([
+                NavigationGroup::make('Master Data')
+                ->collapsed(),
+                    
+                NavigationGroup::make('Transaksi')->collapsed(),
+                    
+                NavigationGroup::make('Laporan')
+                ->collapsed(),
+                    
+                NavigationGroup::make('Pengaturan')
+                ->collapsed(),
+            ])
+            
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -41,6 +42,18 @@ class UserResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return 'User';
+    }
+
+    // ✅ Hide menu dari sidebar jika bukan owner
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::check() && Auth::user()->email === 'owner@tan.com';
+    }
+
+    // ✅ Block akses langsung via URL jika bukan owner
+    public static function canViewAny(): bool
+    {
+        return Auth::check() && Auth::user()->email === 'owner@tan.com';
     }
 
     public static function form(Schema $schema): Schema
