@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Logistik Silvi'),
+    'name' => env('APP_NAME', 'Trans Anugerah Nusa'),
 
     /*
     |--------------------------------------------------------------------------

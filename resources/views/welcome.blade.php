@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistik Silvi</title>
+    <title>Trans Anugerah Nusa</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -19,7 +19,7 @@
                     <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
                 </div>
                 <div class="relative z-10">
-                    <h1 class="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight">Logistik Silvi</h1>
+                    <h1 class="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight">Trans Anugerah Nusa</h1>
                     <p class="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto">Sistem Manajemen Logistik Modern & Terintegrasi</p>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                 <!-- CTA Section -->
                 <div class="text-center pt-8 border-t border-gray-200">
                     <p class="text-gray-600 mb-8 text-lg">Akses panel administrasi untuk mengelola sistem</p>
-                    <a href="https://silvi-logistik.dazytech.web.id/admin" 
+                    <a href="https://trans-anugerah-nusa.dazytech.web.id/admin" 
                        class="inline-block bg-gray-900 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:bg-gray-800 hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
                         Masuk Admin Panel
                     </a>
@@ -55,7 +55,7 @@
 
         <!-- Footer -->
         <div class="text-center mt-8 text-gray-500 text-sm">
-            <p>&copy; 2024 Logistik Silvi by Dazytech. All rights reserved.</p>
+            <p>&copy; 2024 Logistik Trans Anugerah Nusa by Dazytech. All rights reserved.</p>
         </div>
     </div>
 </body>
