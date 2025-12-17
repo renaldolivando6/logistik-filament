@@ -6,12 +6,15 @@ use App\Models\Pesanan;
 use App\Models\Pelanggan;
 use App\Models\Kendaraan;
 use App\Models\Sopir;
+use App\Models\Trip;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
 
 class DashboardStatsOverview extends BaseWidget
 {
+    protected static ?int $sort = 1;
+    
     protected function getStats(): array
     {
         $bulanIni = now()->startOfMonth();
@@ -30,27 +33,39 @@ class DashboardStatsOverview extends BaseWidget
         
         // Revenue bulan ini
         $revenueThisMonth = Pesanan::where('tanggal_pesanan', '>=', $bulanIni)
+            ->where('status', '!=', 'batal')
             ->sum('total_tagihan');
+        
+        // Trip aktif (berangkat/belum selesai)
+        $tripAktif = Trip::whereIn('status', ['draft', 'berangkat'])->count();
         
         return [
             Stat::make('Pesanan Bulan Ini', $pesananThisMonth)
                 ->description(($pesananGrowth >= 0 ? '+' : '') . number_format($pesananGrowth, 1) . '% dari bulan lalu')
                 ->descriptionIcon($pesananGrowth >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
-                ->color($pesananGrowth >= 0 ? 'success' : 'danger')
-                ->chart([7, 3, 4, 5, 6, 3, 5, 8]),
+                ->color($pesananGrowth >= 0 ? 'success' : 'danger'),
                 
             Stat::make('Revenue Bulan Ini', 'Rp ' . Number::format($revenueThisMonth, locale: 'id'))
                 ->description('Total pendapatan')
                 ->descriptionIcon('heroicon-m-banknotes')
-                ->color('success')
-                ->chart([3, 5, 4, 6, 7, 5, 6, 8]),
+                ->color('success'),
                 
-            Stat::make('Armada Aktif', Kendaraan::where('aktif', true)->count() . '/' . Kendaraan::count())
-                ->description('Kendaraan tersedia')
+            Stat::make('Trip Aktif', $tripAktif)
+                ->description('Sedang berjalan')
                 ->descriptionIcon('heroicon-m-truck')
                 ->color('warning'),
                 
-            Stat::make('Pelanggan Aktif', Pelanggan::where('aktif', true)->count())
+            Stat::make('Armada', Kendaraan::where('aktif', true)->count())
+                ->description('Kendaraan tersedia')
+                ->descriptionIcon('heroicon-m-wrench-screwdriver')
+                ->color('info'),
+                
+            Stat::make('Sopir', Sopir::where('aktif', true)->count())
+                ->description('Sopir aktif')
+                ->descriptionIcon('heroicon-m-user-circle')
+                ->color('info'),
+                
+            Stat::make('Pelanggan', Pelanggan::where('aktif', true)->count())
                 ->description('Total pelanggan')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('info'),

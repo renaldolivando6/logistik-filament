@@ -6,7 +6,6 @@ use App\Models\Pesanan;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Support\Number;
 
 class RecentOrdersWidget extends BaseWidget
 {
@@ -18,17 +17,16 @@ class RecentOrdersWidget extends BaseWidget
     {
         return $table
             ->heading('Pesanan Terbaru')
-            ->description('5 pesanan terakhir')
+            ->description('10 pesanan terakhir')
             ->query(
                 Pesanan::query()
-                    ->with(['pelanggan', 'kendaraan', 'sopir'])
-                    ->orderBy('tanggal_pesanan', 'desc')
-                    ->limit(5)
+                    ->with(['pelanggan', 'kendaraan', 'sopir', 'rute.item'])
+                    ->orderBy('id', 'desc')
+                    ->limit(10)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('nomor_pesanan')
-                    ->label('No. Pesanan')
-                    ->searchable()
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
                     ->weight('bold')
                     ->color('primary'),
                     
@@ -40,34 +38,46 @@ class RecentOrdersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('pelanggan.nama')
                     ->label('Pelanggan')
                     ->searchable()
-                    ->icon('heroicon-m-user')
                     ->limit(20),
                     
-                Tables\Columns\TextColumn::make('kendaraan.nopol')
-                    ->label('Kendaraan')
-                    ->icon('heroicon-m-truck')
+                Tables\Columns\TextColumn::make('rute.item.nama')
+                    ->label('Muatan')
                     ->badge()
-                    ->color('warning'),
+                    ->color('primary'),
                     
-                Tables\Columns\TextColumn::make('sopir.nama')
-                    ->label('Sopir')
-                    ->icon('heroicon-m-user-circle')
-                    ->limit(15),
+                Tables\Columns\TextColumn::make('rute_display')
+                    ->label('Rute')
+                    ->getStateUsing(fn($record) => "{$record->rute->asal} → {$record->rute->tujuan}")
+                    ->limit(25),
+                    
+                Tables\Columns\TextColumn::make('berat')
+                    ->label('Berat')
+                    ->formatStateUsing(fn($state) => number_format($state, 0, ',', '.') . ' KG')
+                    ->alignEnd(),
                     
                 Tables\Columns\TextColumn::make('total_tagihan')
                     ->label('Total')
                     ->money('IDR', locale: 'id')
                     ->weight('bold')
-                    ->color('success'),
+                    ->alignEnd(),
                     
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'primary' => 'proses',
-                        'success' => 'selesai',
-                        'danger' => 'batal',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'draft' => 'gray',
+                        'dalam_perjalanan' => 'warning',
+                        'selesai' => 'success',
+                        'batal' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'draft' => 'Draft',
+                        'dalam_perjalanan' => 'Dalam Perjalanan',
+                        'selesai' => 'Selesai',
+                        'batal' => 'Batal',
+                        default => $state,
+                    }),
             ])
             ->paginated(false);
     }
