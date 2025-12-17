@@ -117,14 +117,15 @@
     <table>
         <thead>
             <tr>
-                <th class="text-center" width="5%">No</th>
-                <th width="10%">Tanggal</th>
-                <th width="20%">Pelanggan</th>
-                <th width="15%">Rute</th>
+                <th class="text-center" width="4%">No</th>
+                <th width="9%">Tanggal</th>
+                <th width="18%">Pelanggan</th>
+                <th width="12%">Asal</th>
+                <th width="12%">Tujuan</th>
                 <th width="10%">Muatan</th>
-                <th class="text-right" width="10%">Berat</th>
-                <th class="text-right" width="15%">Total</th>
-                <th class="text-center" width="15%">Status</th>
+                <th class="text-right" width="9%">Berat</th>
+                <th class="text-right" width="13%">Total</th>
+                <th class="text-center" width="13%">Status</th>
             </tr>
         </thead>
         <tbody>
@@ -133,9 +134,10 @@
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td>{{ $pesanan->tanggal_pesanan->format('d/m/Y') }}</td>
                 <td>{{ $pesanan->pelanggan->nama }}</td>
-                <td>{{ $pesanan->rute->asal }} → {{ $pesanan->rute->tujuan }}</td>
+                <td>{{ $pesanan->rute->asal }}</td>
+                <td>{{ $pesanan->rute->tujuan }}</td>
                 <td>{{ $pesanan->rute->item->nama ?? '-' }}</td>
-                <td class="text-right">{{ number_format($pesanan->berat, 2) }} Ton</td>
+                <td class="text-right">{{ number_format($pesanan->berat, 0, ',', '.') }} KG</td>
                 <td class="text-right">Rp {{ number_format($pesanan->total_tagihan, 0, ',', '.') }}</td>
                 <td class="text-center">
                     <span class="badge badge-{{ $pesanan->status }}">
