@@ -7,12 +7,11 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class BiayaOperasionalExcelReport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize
+class BiayaOperasionalExcelReport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
 {
     protected $data;
     
@@ -32,7 +31,7 @@ class BiayaOperasionalExcelReport implements FromCollection, WithHeadings, WithM
             'No',
             'Tanggal',
             'Tipe',
-            'Trip',
+            'Trip ID',
             'Sopir',
             'Kendaraan',
             'Kategori',
@@ -46,19 +45,15 @@ class BiayaOperasionalExcelReport implements FromCollection, WithHeadings, WithM
         static $no = 0;
         $no++;
         
-        $tipe = $biaya->trip_id ? 'Trip' : 'Non-Trip';
-        $trip = $biaya->trip_id ? 'TRIP-' . str_pad($biaya->trip_id, 5, '0', STR_PAD_LEFT) : '-';
-        $sopir = $biaya->trip?->sopir?->nama ?? '-';
-        
         return [
             $no,
             $biaya->tanggal_biaya->format('d/m/Y'),
-            $tipe,
-            $trip,
-            $sopir,
-            $biaya->kendaraan?->nopol ?? '-',
-            $biaya->kategoriBiaya->nama,
-            'Rp ' . number_format($biaya->jumlah, 0, ',', '.'),
+            $biaya->trip_id ? 'Trip' : 'Non-Trip',
+            $biaya->trip_id ? "TRIP-{$biaya->trip_id}" : '-',
+            $biaya->trip?->sopir?->nama ?? '-',
+            $biaya->kendaraan?->nopol ?? $biaya->trip?->kendaraan?->nopol ?? '-',
+            $biaya->kategoribiaya->nama,
+            number_format($biaya->jumlah, 0, ',', '.'),
             $biaya->keterangan ?? '-',
         ];
     }
@@ -70,7 +65,7 @@ class BiayaOperasionalExcelReport implements FromCollection, WithHeadings, WithM
                 'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4472C4']
+                    'startColor' => ['rgb' => 'DC2626']
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
