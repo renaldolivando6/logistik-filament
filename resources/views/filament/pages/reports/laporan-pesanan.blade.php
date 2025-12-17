@@ -1,8 +1,4 @@
 <x-filament-panels::page>
-    @once
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    @endonce
-    
     <x-filament::card class="mb-6">
         <div class="space-y-4">
             <div class="flex items-center justify-between">

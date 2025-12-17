@@ -35,10 +35,10 @@ class ProfitabilitasExcelReport implements FromCollection, WithHeadings, WithMap
             'Sopir',
             'Kendaraan',
             'Jumlah SJ',
-            'Total Berat',
-            'Revenue',
-            'Biaya Operasional',
-            'Profit',
+            'Total Berat (Kg)',
+            'Revenue (Rp)',
+            'Biaya Operasional (Rp)',
+            'Profit (Rp)',
             'Margin (%)',
             'Status',
         ];
@@ -53,26 +53,21 @@ class ProfitabilitasExcelReport implements FromCollection, WithHeadings, WithMap
         $cost = $trip->total_cost ?? 0;
         $profit = $revenue - $cost;
         $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0;
+        $totalBerat = $trip->total_berat ?? 0;
         
         return [
             $no,
-            'TRIP-' . str_pad($trip->id, 5, '0', STR_PAD_LEFT),
+            $trip->id,
             $trip->tanggal_trip->format('d/m/Y'),
             $trip->sopir->nama,
             $trip->kendaraan->nopol,
             $trip->suratJalan_count ?? 0,
-            number_format($trip->total_berat ?? 0, 2, ',', '.') . ' Ton',
-            'Rp ' . number_format($revenue, 0, ',', '.'),
-            'Rp ' . number_format($cost, 0, ',', '.'),
-            'Rp ' . number_format($profit, 0, ',', '.'),
-            $margin . '%',
-            match($trip->status) {
-                'draft' => 'Draft',
-                'berangkat' => 'Berangkat',
-                'selesai' => 'Selesai',
-                'batal' => 'Batal',
-                default => $trip->status,
-            },
+            number_format($totalBerat, 2, ',', '.'),
+            number_format($revenue, 0, ',', '.'),
+            number_format($cost, 0, ',', '.'),
+            number_format($profit, 0, ',', '.'),
+            $margin,
+            'Selesai', // Hard-coded karena hanya trip selesai yang masuk laporan
         ];
     }
     
@@ -83,7 +78,7 @@ class ProfitabilitasExcelReport implements FromCollection, WithHeadings, WithMap
                 'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'FFFFFF']],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4472C4']
+                    'startColor' => ['rgb' => '2563EB']
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,

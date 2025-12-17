@@ -16,6 +16,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Blade;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -27,8 +28,13 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->brandName('PT. Trans Anugerah Nusa')
+            // Ini akan menyuntikkan script app.js ke bagian bawah body setiap halaman admin
+            ->renderHook(
+                'panels::body.end',
+                fn (): string => Blade::render("@vite('resources/js/app.js')")
+            )
             
+            ->brandName('PT. Trans Anugerah Nusa')
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -43,7 +49,6 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\DashboardStatsOverview::class,
                 \App\Filament\Widgets\RecentOrdersWidget::class,
             ])
-
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

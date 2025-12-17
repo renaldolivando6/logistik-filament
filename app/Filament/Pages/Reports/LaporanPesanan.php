@@ -272,9 +272,9 @@ class LaporanPesanan extends Page implements HasTable
         return $table
             ->query($this->getFilteredQuery())
             ->columns([
-                TextColumn::make('index')
-                    ->label('No')
-                    ->rowIndex(),
+                TextColumn::make('id')
+                    ->label('No ID')
+                    ->sortable(),
                 
                 TextColumn::make('tanggal_pesanan')
                     ->label('Tanggal')
@@ -335,7 +335,7 @@ class LaporanPesanan extends Page implements HasTable
                         default => $state,
                     }),
             ])
-            ->defaultSort('tanggal_pesanan', 'desc')
+            ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50, 100]);
     }
     
