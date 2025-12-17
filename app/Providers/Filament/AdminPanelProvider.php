@@ -34,7 +34,9 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => Blade::render("@vite('resources/js/app.js')")
             )
             
+            ->brandLogo(fn () => view('filament.brand'))
             ->brandName('PT. Trans Anugerah Nusa')
+            
             ->colors([
                 'primary' => Color::Amber,
             ])
